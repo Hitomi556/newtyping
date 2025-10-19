@@ -268,6 +268,21 @@ app.post('/api/reset-level-progress', async (c) => {
 
 // ========== 管理画面API ==========
 
+// Basic認証ミドルウェア（管理API用）
+app.use('/api/admin/*', async (c, next) => {
+  const username = c.env.ADMIN_USERNAME || 'admin'
+  const password = c.env.ADMIN_PASSWORD || 'password'
+  
+  const auth = basicAuth({
+    username,
+    password,
+    realm: '管理API',
+    hashFunction: (m: string) => m,
+  })
+  
+  return auth(c, next)
+})
+
 // API: 全単語の取得（管理画面用）
 app.get('/api/admin/words', async (c) => {
   try {
