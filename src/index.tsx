@@ -375,39 +375,80 @@ app.post('/api/admin/import-csv', async (c) => {
       return c.json({ success: false, error: 'CSVデータが不足しています' }, 400)
     }
     
-    // CSVをパース（改行で分割）
-    const lines = csv_data.trim().split('\n')
+    // CSVをパース - 改善版（引用符対応）
+    const parseCSVLine = (line: string): string[] => {
+      const result: string[] = []
+      let current = ''
+      let inQuotes = false
+      
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i]
+        const nextChar = line[i + 1]
+        
+        if (char === '"') {
+          if (inQuotes && nextChar === '"') {
+            // エスケープされた引用符
+            current += '"'
+            i++
+          } else {
+            // 引用符の開始/終了
+            inQuotes = !inQuotes
+          }
+        } else if (char === ',' && !inQuotes) {
+          // フィールドの区切り
+          result.push(current.trim())
+          current = ''
+        } else {
+          current += char
+        }
+      }
+      
+      result.push(current.trim())
+      return result
+    }
+    
+    const lines = csv_data.trim().split(/\r?\n/)
     let successCount = 0
     let errorCount = 0
-    const errors = []
+    const errors: string[] = []
     
     // ヘッダー行をスキップ（1行目）
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim()
       if (!line) continue
       
-      // カンマで分割
-      const parts = line.split(',').map(p => p.trim())
-      
-      if (parts.length < 3) {
-        errorCount++
-        errors.push(`行${i + 1}: データが不足しています`)
-        continue
-      }
-      
-      const [english, japanese, level_id, part_of_speech, example_sentence] = parts
-      
       try {
+        const parts = parseCSVLine(line)
+        
+        if (parts.length < 3) {
+          errorCount++
+          errors.push(`行${i + 1}: データが不足しています（最低3列必要: 英単語,日本語,レベルID）`)
+          continue
+        }
+        
+        const english = parts[0]?.trim()
+        const japanese = parts[1]?.trim()
+        const levelIdStr = parts[2]?.trim()
+        const part_of_speech = parts[3]?.trim() || null
+        const example_sentence = parts[4]?.trim() || null
+        
+        if (!english || !japanese || !levelIdStr) {
+          errorCount++
+          errors.push(`行${i + 1}: 必須項目が空です`)
+          continue
+        }
+        
+        const level_id = parseInt(levelIdStr)
+        if (isNaN(level_id) || level_id < 1 || level_id > 10) {
+          errorCount++
+          errors.push(`行${i + 1}: レベルIDが無効です（1-10の範囲で指定）`)
+          continue
+        }
+        
         await DB.prepare(`
           INSERT INTO words (english, japanese, level_id, part_of_speech, example_sentence)
           VALUES (?, ?, ?, ?, ?)
-        `).bind(
-          english, 
-          japanese, 
-          parseInt(level_id), 
-          part_of_speech || null, 
-          example_sentence || null
-        ).run()
+        `).bind(english, japanese, level_id, part_of_speech, example_sentence).run()
         
         successCount++
       } catch (error) {
@@ -590,25 +631,41 @@ app.get('/admin', (c) => {
                         <i class="fas fa-info-circle mr-2"></i>CSVフォーマット
                     </h3>
                     <p class="text-sm text-blue-800 mb-2">以下の形式でCSVデータを入力してください：</p>
-                    <code class="block bg-white p-3 rounded text-sm">
+                    <code class="block bg-white p-3 rounded text-sm overflow-x-auto">
                         english,japanese,level_id,part_of_speech,example_sentence<br>
                         beautiful,美しい,4,形容詞,She is beautiful.<br>
                         interesting,興味深い,4,形容詞,<br>
                         difficult,難しい,3,形容詞,This is difficult.
                     </code>
-                    <p class="text-xs text-blue-700 mt-2">
-                        ※ level_id: 5=5級, 4=4級, 3=3級, 2=準2級, 1=2級, 0=準1級, -1=1級
-                    </p>
+                    <div class="mt-3 text-xs text-blue-700">
+                        <p class="font-bold mb-1">レベルIDの指定:</p>
+                        <p>5=5級, 4=4級, 3=3級, 2=準2級, 1=2級, 0=準1級, -1=1級</p>
+                        <p class="font-bold mt-2 mb-1">注意事項:</p>
+                        <ul class="list-disc ml-4">
+                            <li>1行目はヘッダー行（スキップされます）</li>
+                            <li>必須項目: 英単語, 日本語, レベルID</li>
+                            <li>品詞と例文は省略可能</li>
+                            <li>カンマやダブルクォートを含む場合はダブルクォートで囲んでください</li>
+                        </ul>
+                    </div>
                 </div>
 
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">CSVデータ</label>
-                    <textarea id="csv-input" rows="10" class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm" placeholder="CSVデータを貼り付けてください"></textarea>
+                    <textarea id="csv-input" rows="12" class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm" placeholder="CSVデータを貼り付けてください（Excelからコピーも可能）"></textarea>
                 </div>
 
-                <button id="import-csv-btn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition">
-                    <i class="fas fa-file-import mr-2"></i>インポート開始
-                </button>
+                <div class="flex gap-3 mb-4">
+                    <button id="import-csv-btn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition">
+                        <i class="fas fa-file-import mr-2"></i>インポート開始
+                    </button>
+                    <button id="clear-csv-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-2 rounded-lg transition">
+                        <i class="fas fa-eraser mr-2"></i>クリア
+                    </button>
+                    <button id="sample-csv-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition">
+                        <i class="fas fa-file-alt mr-2"></i>サンプルCSVを挿入
+                    </button>
+                </div>
 
                 <div id="import-result" class="mt-4"></div>
             </div>

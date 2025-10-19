@@ -29,6 +29,8 @@ function setupEventListeners() {
     
     // CSVインポート
     document.getElementById('import-csv-btn')?.addEventListener('click', handleImportCSV);
+    document.getElementById('clear-csv-btn')?.addEventListener('click', clearCSV);
+    document.getElementById('sample-csv-btn')?.addEventListener('click', insertSampleCSV);
     
     // フィルター変更
     document.getElementById('filter-level')?.addEventListener('change', handleFilterChange);
@@ -268,6 +270,13 @@ async function handleImportCSV() {
         return;
     }
     
+    // インポート中メッセージを表示
+    document.getElementById('import-result').innerHTML = `
+        <div class="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg">
+            <i class="fas fa-spinner fa-spin mr-2"></i>インポート中...
+        </div>
+    `;
+    
     try {
         const response = await axios.post('/api/admin/import-csv', {
             csv_data: csvData
@@ -276,14 +285,14 @@ async function handleImportCSV() {
         if (response.data.success) {
             const result = `
                 <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
-                    <p class="font-bold mb-2">インポート完了</p>
+                    <p class="font-bold mb-2"><i class="fas fa-check-circle mr-2"></i>インポート完了</p>
                     <p>成功: ${response.data.imported}件</p>
                     <p>エラー: ${response.data.errors}件</p>
-                    ${response.data.error_details.length > 0 ? `
+                    ${response.data.error_details && response.data.error_details.length > 0 ? `
                         <details class="mt-2">
-                            <summary class="cursor-pointer">エラー詳細</summary>
-                            <ul class="mt-2 text-sm">
-                                ${response.data.error_details.map(e => `<li>- ${e}</li>`).join('')}
+                            <summary class="cursor-pointer font-bold">エラー詳細を表示</summary>
+                            <ul class="mt-2 text-sm list-disc ml-6">
+                                ${response.data.error_details.map(e => `<li>${e}</li>`).join('')}
                             </ul>
                         </details>
                     ` : ''}
@@ -296,7 +305,7 @@ async function handleImportCSV() {
         } else {
             document.getElementById('import-result').innerHTML = `
                 <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-                    <p>インポートに失敗しました: ${response.data.error}</p>
+                    <p><i class="fas fa-exclamation-triangle mr-2"></i>インポートに失敗しました: ${response.data.error}</p>
                 </div>
             `;
         }
@@ -304,10 +313,39 @@ async function handleImportCSV() {
         console.error('CSVインポートエラー:', error);
         document.getElementById('import-result').innerHTML = `
             <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-                <p>インポートに失敗しました</p>
+                <p><i class="fas fa-exclamation-triangle mr-2"></i>インポートに失敗しました</p>
+                <p class="text-sm mt-1">エラー: ${error.response?.data?.error || error.message}</p>
             </div>
         `;
     }
+}
+
+// サンプルCSVを挿入
+function insertSampleCSV() {
+    const sampleCSV = `english,japanese,level_id,part_of_speech,example_sentence
+apple,りんご,5,名詞,I like apples.
+book,本,5,名詞,This is my book.
+cat,猫,5,名詞,I have a cat.
+dog,犬,5,名詞,My dog is cute.
+run,走る,5,動詞,I run every day.
+beautiful,美しい,4,形容詞,She is beautiful.
+interesting,興味深い,4,形容詞,This book is interesting.
+difficult,難しい,3,形容詞,This question is difficult.
+important,重要な,3,形容詞,This is very important.
+necessary,必要な,3,形容詞,Water is necessary for life.`;
+    
+    document.getElementById('csv-input').value = sampleCSV;
+    document.getElementById('import-result').innerHTML = `
+        <div class="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg">
+            <i class="fas fa-info-circle mr-2"></i>サンプルCSVを挿入しました。必要に応じて編集してください。
+        </div>
+    `;
+}
+
+// CSVクリア
+function clearCSV() {
+    document.getElementById('csv-input').value = '';
+    document.getElementById('import-result').innerHTML = '';
 }
 
 // メッセージ表示
