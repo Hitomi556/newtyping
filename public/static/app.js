@@ -160,8 +160,8 @@ function displayQuestion() {
         questionArea.innerHTML = `<div class="text-4xl font-bold">${word.japanese}</div>`;
     } else {
         questionArea.innerHTML = `
-            <button onclick="speakWord('${word.japanese}')" class="bg-purple-500 hover:bg-purple-600 text-white px-8 py-4 rounded-lg text-2xl transition">
-                <i class="fas fa-volume-up mr-3"></i>日本語を聞く
+            <button onclick="speakWord('${word.english}')" class="bg-purple-500 hover:bg-purple-600 text-white px-8 py-4 rounded-lg text-2xl transition">
+                <i class="fas fa-volume-up mr-3"></i>英語を聞く
             </button>
         `;
     }
@@ -368,8 +368,8 @@ function switchMode(mode) {
 function speakWord(text) {
     if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'ja-JP';
-        utterance.rate = 0.8;
+        utterance.lang = 'en-US'; // 英語（アメリカ）ネイティブ発音
+        utterance.rate = 0.9; // 自然な速度
         speechSynthesis.speak(utterance);
     } else {
         alert('お使いのブラウザは音声機能に対応していません');
