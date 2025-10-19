@@ -182,6 +182,11 @@ function handleInput(e) {
     if (input && correctAnswer.startsWith(input)) {
         ghostText.textContent = correctAnswer;
         ghostText.style.color = 'rgba(0, 200, 0, 0.3)';
+        
+        // 完全一致したら自動的に次へ
+        if (input === correctAnswer) {
+            checkAnswer();
+        }
     } else if (input) {
         ghostText.textContent = correctAnswer;
         ghostText.style.color = 'rgba(255, 0, 0, 0.3)';
