@@ -14,10 +14,11 @@
 
 ## 📍 公開URL
 
-- **メインアプリ**: https://3000-ipbrvk4pap5bqdsctngg0-82b888ba.sandbox.novita.ai
-- **管理画面**: https://3000-ipbrvk4pap5bqdsctngg0-82b888ba.sandbox.novita.ai/admin
+- **本番環境**: https://f8d5e141.webapp-7wz.pages.dev
+- **管理画面**: https://f8d5e141.webapp-7wz.pages.dev/admin
   - ユーザー名: `hawai1214`
   - パスワード: `waikiki1101`
+- **GitHub**: https://github.com/Hitomi556/newtyping
 
 ## 🎯 完成した機能
 
@@ -34,7 +35,12 @@
 ### 管理機能
 - ✅ 単語一覧表示（ページネーション付き）
 - ✅ 単語の追加・編集・削除
-- ✅ CSV一括インポート
+- ✅ **CSV一括インポート（改善版）**
+  - ✨ 引用符付きフィールド対応
+  - ✨ カンマを含むテキストに対応
+  - ✨ エスケープされた引用符に対応
+  - ✨ サンプルCSVボタンで簡単テスト
+  - ✨ 詳細なエラーメッセージ表示
 - ✅ 級別フィルタリング
 - ✅ Basic認証による管理画面の保護
 
@@ -122,7 +128,10 @@ curl http://localhost:3000
 - `POST /api/admin/words` - 単語の追加
 - `PUT /api/admin/words/:id` - 単語の更新
 - `DELETE /api/admin/words/:id` - 単語の削除
-- `POST /api/admin/import-csv` - CSV一括インポート
+- `POST /api/admin/import-csv` - CSV一括インポート（改善版）
+  - 引用符対応の高度なCSVパーサー
+  - レベルIDのバリデーション（1-10）
+  - 詳細なエラーレポート
 
 ## 📊 現在の単語データ
 
@@ -133,13 +142,13 @@ curl http://localhost:3000
 
 ## 🔄 次のステップ
 
-1. **単語データの拡充** - 管理画面から各級の単語を追加
-2. **本番デプロイ** - Cloudflare Pagesへのデプロイ
-3. **機能拡張**
+1. **単語データの拡充** - 管理画面のCSV一括インポート機能を使用して各級の単語を大量追加
+2. **機能拡張**
    - ユーザー認証機能
    - 学習レポート機能
    - ランキング機能
    - 学習リマインダー
+   - エクスポート機能（学習データのバックアップ）
 
 ## 💡 使い方
 
@@ -154,6 +163,10 @@ curl http://localhost:3000
 1. `/admin`にアクセス（ユーザー名: hawai1214, パスワード: waikiki1101）
 2. 「単語追加」タブから単語を個別追加
 3. または「CSV一括インポート」タブからCSVで一括登録
+   - 📝 CSVフォーマット: `english,japanese,level_id,part_of_speech,example_sentence`
+   - 💡 「サンプルCSVを挿入」ボタンでフォーマット例を確認可能
+   - ✅ カンマや引用符を含むデータも正しく処理
+   - 📊 インポート結果の詳細レポート表示
 4. 「単語一覧」タブで既存単語の編集・削除
 
 ## 📄 ライセンス
@@ -167,5 +180,6 @@ curl http://localhost:3000
 ---
 
 **最終更新日**: 2025-10-19
-**ステータス**: ✅ 稼働中
-**デプロイ環境**: サンドボックス（PM2管理）
+**ステータス**: ✅ 本番稼働中
+**デプロイ環境**: Cloudflare Pages（グローバル配信）
+**最新の改善**: CSV一括インポート機能の大幅強化（引用符、カンマ、エスケープ対応）
