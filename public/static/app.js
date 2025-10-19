@@ -164,6 +164,8 @@ function displayQuestion() {
                 <i class="fas fa-volume-up mr-3"></i>英語を聞く
             </button>
         `;
+        // 音声モードの場合、自動的に最初の一度読み上げる
+        setTimeout(() => speakWord(word.english), 300);
     }
     
     partOfSpeech.textContent = word.part_of_speech ? `（${word.part_of_speech}）` : '';
