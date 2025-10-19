@@ -16,8 +16,8 @@
 
 - **メインアプリ**: https://3000-ipbrvk4pap5bqdsctngg0-82b888ba.sandbox.novita.ai
 - **管理画面**: https://3000-ipbrvk4pap5bqdsctngg0-82b888ba.sandbox.novita.ai/admin
-  - ユーザー名: `admin`
-  - パスワード: `password`
+  - ユーザー名: `hawai1214`
+  - パスワード: `waikiki1101`
 
 ## 🎯 完成した機能
 
@@ -151,7 +151,7 @@ curl http://localhost:3000
 5. 間違えた単語は自動的に復習リストに追加
 
 ### 管理者向け
-1. `/admin`にアクセス（ユーザー名: admin, パスワード: password）
+1. `/admin`にアクセス（ユーザー名: hawai1214, パスワード: waikiki1101）
 2. 「単語追加」タブから単語を個別追加
 3. または「CSV一括インポート」タブからCSVで一括登録
 4. 「単語一覧」タブで既存単語の編集・削除
