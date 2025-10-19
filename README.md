@@ -1,21 +1,171 @@
-```txt
+# Eigo Bubble - 英単語タイピング学習アプリ
+
+## プロジェクト概要
+
+**Eigo Bubble**は、英検5級から1級までの英単語をタイピング練習を通じて学習できるWebアプリケーションです。
+
+### 主な機能
+
+1. **学習追跡** - 進捗が自動で保存され、毎日の成果を見える化
+2. **スマート復習** - 間違えた単語を自動分析し、効率的に再出題
+3. **タイピング練習** - 連続二回正解で習得カウントされる楽しい練習モード
+4. **音声モード** - 日本語音声を聞いて英単語を入力する練習モード
+5. **管理画面** - 単語の追加・編集・削除、CSV一括インポート機能
+
+## 📍 公開URL
+
+- **メインアプリ**: https://3000-ipbrvk4pap5bqdsctngg0-82b888ba.sandbox.novita.ai
+- **管理画面**: https://3000-ipbrvk4pap5bqdsctngg0-82b888ba.sandbox.novita.ai/admin
+  - ユーザー名: `admin`
+  - パスワード: `password`
+
+## 🎯 完成した機能
+
+### ユーザー機能
+- ✅ 英検5級〜1級の級選択画面
+- ✅ タイピング練習機能（テキストモード・音声モード）
+- ✅ リアルタイム統計表示（正解数、正答率、残り問題数）
+- ✅ 間違えた単語の自動復習機能
+- ✅ 学習進捗の自動保存
+- ✅ 今日の正解数・単語習得数・連続学習日数の統計表示
+- ✅ ゴーストテキスト表示（入力補助）
+- ✅ スキップ機能
+
+### 管理機能
+- ✅ 単語一覧表示（ページネーション付き）
+- ✅ 単語の追加・編集・削除
+- ✅ CSV一括インポート
+- ✅ 級別フィルタリング
+- ✅ Basic認証による管理画面の保護
+
+### その他のページ
+- ✅ 利用規約ページ
+- ✅ お問い合わせページ（EmailJS統合）
+
+## 🛠 技術スタック
+
+- **フレームワーク**: Hono (Cloudflare Workers)
+- **データベース**: Cloudflare D1 (SQLite)
+- **フロントエンド**: HTML, CSS, JavaScript, TailwindCSS
+- **ビルドツール**: Vite
+- **デプロイ**: Cloudflare Pages
+- **プロセス管理**: PM2
+
+## 📦 データモデル
+
+### eiken_levels（英検級テーブル）
+- id, level_name, display_name, created_at
+
+### words（単語テーブル）
+- id, english, japanese, level_id, part_of_speech, example_sentence, created_at
+
+### progress（学習進捗テーブル）
+- id, word_id, user_id, correct_count, incorrect_count, consecutive_correct, is_mastered, mastered_at, last_practiced, mode, created_at
+
+## 🚀 開発環境のセットアップ
+
+### 1. 依存関係のインストール
+```bash
+cd /home/user/webapp
 npm install
-npm run dev
 ```
 
-```txt
-npm run deploy
+### 2. D1データベースのセットアップ
+```bash
+# マイグレーション実行
+npm run db:migrate:local
+
+# サンプルデータの投入
+npm run db:seed
 ```
 
-[For generating/synchronizing types based on your Worker configuration run](https://developers.cloudflare.com/workers/wrangler/commands/#types):
-
-```txt
-npm run cf-typegen
+### 3. ビルド
+```bash
+npm run build
 ```
 
-Pass the `CloudflareBindings` as generics when instantiation `Hono`:
+### 4. 開発サーバーの起動
+```bash
+# PM2で起動（推奨）
+pm2 start ecosystem.config.cjs
 
-```ts
-// src/index.ts
-const app = new Hono<{ Bindings: CloudflareBindings }>()
+# または直接起動
+npm run dev:d1
 ```
+
+### 5. サービスの確認
+```bash
+# ステータス確認
+pm2 list
+
+# ログ確認
+pm2 logs eigo-bubble --nostream
+
+# サービステスト
+curl http://localhost:3000
+```
+
+## 📝 APIエンドポイント
+
+### ユーザーAPI
+- `GET /api/levels` - 級一覧の取得
+- `GET /api/words/:levelId` - 特定の級の単語一覧
+- `GET /api/quiz/:levelId` - ランダムに単語を取得（クイズ用）
+- `POST /api/progress` - 学習進捗の記録
+- `GET /api/stats/:levelId` - 統計情報の取得
+- `GET /api/mastery/global` - グローバル習得統計
+- `GET /api/mastery/level/:levelId` - 級ごとの習得チェック
+- `POST /api/reset-level-progress` - 級の進捗をリセット
+
+### 管理API（Basic認証必要）
+- `GET /api/admin/words` - 全単語の取得
+- `POST /api/admin/words` - 単語の追加
+- `PUT /api/admin/words/:id` - 単語の更新
+- `DELETE /api/admin/words/:id` - 単語の削除
+- `POST /api/admin/import-csv` - CSV一括インポート
+
+## 📊 現在の単語データ
+
+- **5級**: 10語（hello, cat, dog, book, apple など）
+- **4級**: 10語（beautiful, interesting, difficult など）
+- **3級**: 10語（however, therefore, although など）
+- **準2級〜1級**: 未登録（管理画面から追加可能）
+
+## 🔄 次のステップ
+
+1. **単語データの拡充** - 管理画面から各級の単語を追加
+2. **本番デプロイ** - Cloudflare Pagesへのデプロイ
+3. **機能拡張**
+   - ユーザー認証機能
+   - 学習レポート機能
+   - ランキング機能
+   - 学習リマインダー
+
+## 💡 使い方
+
+### ユーザー向け
+1. トップページで級を選択
+2. テキストモードまたは音声モードを選択
+3. 表示される日本語に対応する英単語を入力
+4. 連続2回正解で単語を習得
+5. 間違えた単語は自動的に復習リストに追加
+
+### 管理者向け
+1. `/admin`にアクセス（ユーザー名: admin, パスワード: password）
+2. 「単語追加」タブから単語を個別追加
+3. または「CSV一括インポート」タブからCSVで一括登録
+4. 「単語一覧」タブで既存単語の編集・削除
+
+## 📄 ライセンス
+
+© 2025 Eigo Bubble. All rights reserved.
+
+## 📞 お問い合わせ
+
+アプリ内の「お問い合わせ」ページからご連絡ください。
+
+---
+
+**最終更新日**: 2025-10-19
+**ステータス**: ✅ 稼働中
+**デプロイ環境**: サンドボックス（PM2管理）
