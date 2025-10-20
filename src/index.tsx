@@ -454,9 +454,9 @@ app.post('/api/admin/import-csv', async (c) => {
         }
         
         const level_id = parseInt(levelIdStr)
-        if (isNaN(level_id) || level_id < 1 || level_id > 10) {
+        if (isNaN(level_id) || level_id < -1 || level_id > 5) {
           errorCount++
-          errors.push(`行${i + 1}: レベルIDが無効です（1-10の範囲で指定）`)
+          errors.push(`行${i + 1}: レベルIDが無効です（5=5級, 4=4級, 3=3級, 2=準2級, 1=2級, 0=準1級, -1=1級）`)
           continue
         }
         
