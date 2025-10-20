@@ -1081,7 +1081,7 @@ app.get('/', (c) => {
                     <i class="fas fa-graduation-cap"></i>
                     Eigo Bubble
                 </h1>
-                <p class="text-2xl font-bold text-gray-800 mt-2">英単語タイピング学習</p>
+                <p class="text-2xl font-bold text-white mt-2">英単語タイピング学習</p>
                 <div>
                     <a href="/admin" class="text-indigo-600 hover:text-indigo-800 transition text-sm">
                         <i class="fas fa-cog mr-2"></i>管理画面
@@ -1091,20 +1091,20 @@ app.get('/', (c) => {
 
             <!-- 3つの機能紹介 -->
             <div class="mb-8 max-w-2xl mx-auto space-y-3">
-                <div class="flex items-start gap-3 text-gray-700">
-                    <i class="fas fa-chart-line text-blue-600 text-xl mt-1"></i>
+                <div class="flex items-start gap-3 text-white">
+                    <i class="fas fa-chart-line text-blue-400 text-xl mt-1"></i>
                     <div>
                         <span class="font-semibold">学習追跡：</span>進捗が自動で保存され、毎日の成果を見える化します。
                     </div>
                 </div>
-                <div class="flex items-start gap-3 text-gray-700">
-                    <i class="fas fa-brain text-purple-600 text-xl mt-1"></i>
+                <div class="flex items-start gap-3 text-white">
+                    <i class="fas fa-brain text-purple-400 text-xl mt-1"></i>
                     <div>
                         <span class="font-semibold">スマート復習：</span>間違えた単語を自動分析し、効率的に再出題します。
                     </div>
                 </div>
-                <div class="flex items-start gap-3 text-gray-700">
-                    <i class="fas fa-keyboard text-green-600 text-xl mt-1"></i>
+                <div class="flex items-start gap-3 text-white">
+                    <i class="fas fa-keyboard text-green-400 text-xl mt-1"></i>
                     <div>
                         <span class="font-semibold">タイピング練習：</span>単語を連続二回正解で習得カウントされる楽しい練習モードです。
                     </div>
@@ -1158,7 +1158,7 @@ app.get('/', (c) => {
 
             <!-- 級選択画面 -->
             <div id="level-selection">
-                <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+                <h3 class="text-2xl font-bold text-white mb-6 text-center">
                     <i class="fas fa-list mr-2"></i>
                     級を選択してください
                 </h3>
@@ -1285,10 +1285,10 @@ app.get('/', (c) => {
         <!-- フッター -->
         <footer class="app-footer">
             <div class="mb-2 space-x-4">
-                <a href="/terms" class="text-indigo-600 hover:text-indigo-800 transition text-sm">
+                <a href="/terms" class="text-white hover:text-gray-200 transition text-sm">
                     <i class="fas fa-file-contract mr-1"></i>利用規約
                 </a>
-                <a href="/contact" class="text-indigo-600 hover:text-indigo-800 transition text-sm">
+                <a href="/contact" class="text-white hover:text-gray-200 transition text-sm">
                     <i class="fas fa-envelope mr-1"></i>お問い合わせ
                 </a>
             </div>
