@@ -9,6 +9,7 @@ let incorrectCount = 0;
 let wrongWords = [];
 let isReviewMode = false;
 let currentMode = 'text'; // 'text' または 'audio'
+let mistakeMade = false; // 途中でミスがあったかどうかを記録
 
 // ローカルストレージキー
 const STORAGE_KEYS = {
@@ -155,6 +156,7 @@ function displayQuestion() {
     answerInput.focus();
     feedback.textContent = '';
     ghostText.textContent = word.english;
+    mistakeMade = false; // 新しい単語なのでミスフラグをリセット
     
     // 単語のヒント表示を生成（最初の1文字を薄く、残りはアンダースコア）
     const firstChar = word.english.charAt(0);
@@ -196,6 +198,8 @@ function handleInput(e) {
             checkAnswer();
         }
     } else if (input) {
+        // 間違った入力があった場合、ミスフラグを立てる
+        mistakeMade = true;
         ghostText.textContent = correctAnswer;
         ghostText.style.color = 'rgba(255, 0, 0, 0.3)';
     } else {
@@ -226,7 +230,8 @@ async function checkAnswer() {
     
     answerInput.disabled = true;
     
-    const isCorrect = userAnswer === correctAnswer;
+    // 最終的な入力が正しくても、途中でミスがあった場合は不正解とする
+    const isCorrect = userAnswer === correctAnswer && !mistakeMade;
     
     if (isCorrect) {
         correctCount++;
@@ -238,7 +243,11 @@ async function checkAnswer() {
     } else {
         incorrectCount++;
         wrongWords.push(word);
-        feedback.textContent = `不正解... 正解: ${word.english}`;
+        if (mistakeMade && userAnswer === correctAnswer) {
+            feedback.textContent = `途中でミスがありました... 正解: ${word.english}`;
+        } else {
+            feedback.textContent = `不正解... 正解: ${word.english}`;
+        }
         feedback.className = 'text-center mt-4 text-lg font-semibold h-8 feedback-incorrect';
     }
     
