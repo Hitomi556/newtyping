@@ -205,7 +205,6 @@ function handleInput(e) {
     
     // ヒント表示の動的更新
     updateWordHint(input, correctAnswer);
-    }
 }
 
 // Enterキー処理
