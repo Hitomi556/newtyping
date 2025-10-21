@@ -147,6 +147,7 @@ function displayQuestion() {
     const partOfSpeech = document.getElementById('part-of-speech');
     const ghostText = document.getElementById('ghost-text');
     const feedback = document.getElementById('feedback');
+    const wordHint = document.getElementById('word-hint');
     
     // リセット
     answerInput.value = '';
@@ -154,6 +155,11 @@ function displayQuestion() {
     answerInput.focus();
     feedback.textContent = '';
     ghostText.textContent = word.english;
+    
+    // 単語のヒント表示を生成（最初の1文字を薄く、残りはアンダースコア）
+    const firstChar = word.english.charAt(0);
+    const underscores = '_'.repeat(word.english.length - 1);
+    wordHint.innerHTML = `<span style="color: rgba(100, 100, 100, 0.3); letter-spacing: 2px;">${firstChar}</span><span style="letter-spacing: 2px;">${underscores}</span>`;
     
     // モードに応じて表示を変更
     if (currentMode === 'text') {
@@ -195,6 +201,10 @@ function handleInput(e) {
     } else {
         ghostText.textContent = correctAnswer;
         ghostText.style.color = 'rgba(0, 0, 0, 0.2)';
+    }
+    
+    // ヒント表示の動的更新
+    updateWordHint(input, correctAnswer);
     }
 }
 
@@ -364,6 +374,31 @@ function switchMode(mode) {
     if (currentWordIndex < currentWords.length) {
         displayQuestion();
     }
+}
+
+// ヒント表示の動的更新
+function updateWordHint(input, correctAnswer) {
+    const wordHint = document.getElementById('word-hint');
+    if (!wordHint) return;
+    
+    let hintHTML = '';
+    
+    for (let i = 0; i < correctAnswer.length; i++) {
+        if (i < input.length) {
+            // 入力済みの部分は通常色で表示
+            const isCorrect = input[i] === correctAnswer[i];
+            const color = isCorrect ? 'rgba(0, 200, 0, 0.8)' : 'rgba(255, 0, 0, 0.8)';
+            hintHTML += `<span style="color: ${color}; letter-spacing: 2px;">${correctAnswer[i]}</span>`;
+        } else if (i === 0) {
+            // 最初の文字（未入力の場合）は薄いグレーで表示
+            hintHTML += `<span style="color: rgba(100, 100, 100, 0.3); letter-spacing: 2px;">${correctAnswer[i]}</span>`;
+        } else {
+            // 残りはアンダースコア
+            hintHTML += `<span style="letter-spacing: 2px;">_</span>`;
+        }
+    }
+    
+    wordHint.innerHTML = hintHTML;
 }
 
 // 音声読み上げ

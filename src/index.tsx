@@ -1218,6 +1218,9 @@ app.get('/', (c) => {
                         </div>
 
                         <div class="max-w-md mx-auto">
+                            <!-- ヒント表示（単語の長さとアンダースコア） -->
+                            <div id="word-hint" class="text-center text-2xl font-mono mb-2 h-8"></div>
+                            
                             <div class="input-container">
                                 <div id="ghost-text" class="ghost-text"></div>
                                 <input 
