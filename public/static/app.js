@@ -64,12 +64,12 @@ async function loadLevels() {
     }
 }
 
-// 級一覧を表示
-function displayLevels(levels) {
+// 級一覧を表示（復習予定数付き）
+async function displayLevels(levels) {
     const levelsList = document.getElementById('levels-list');
     levelsList.innerHTML = '';
     
-    levels.forEach(level => {
+    for (const level of levels) {
         const card = document.createElement('div');
         card.className = 'level-card';
         card.onclick = () => startLevel(level);
@@ -84,6 +84,17 @@ function displayLevels(levels) {
             '-1': 'bg-pink-500'
         };
         
+        // 復習予定数を取得
+        let dueCount = 0;
+        try {
+            const response = await axios.get(`/api/review-due/${level.id}`);
+            if (response.data.success) {
+                dueCount = response.data.due_count;
+            }
+        } catch (error) {
+            console.error('復習予定数の取得エラー:', error);
+        }
+        
         card.innerHTML = `
             <div class="level-badge ${badgeColors[level.id]} text-white">
                 ${level.display_name}
@@ -91,13 +102,18 @@ function displayLevels(levels) {
             <div class="text-2xl font-bold text-gray-800 mb-2">
                 ${level.word_count || 0}語
             </div>
+            ${dueCount > 0 ? `
+                <div class="text-sm text-orange-600 font-bold mb-1">
+                    <i class="fas fa-clock mr-1"></i>復習予定: ${dueCount}語
+                </div>
+            ` : ''}
             <div class="text-sm text-gray-600">
                 クリックして開始
             </div>
         `;
         
         levelsList.appendChild(card);
-    });
+    }
 }
 
 // 級を開始

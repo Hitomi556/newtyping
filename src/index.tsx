@@ -89,31 +89,120 @@ app.get('/api/words/:levelId', async (c) => {
   }
 })
 
-// API: ランダムに単語を取得（クイズ用）
+// API: ランダムに単語を取得（クイズ用・忘却曲線対応）
 app.get('/api/quiz/:levelId', async (c) => {
   try {
     const { DB } = c.env
     const levelId = c.req.param('levelId')
-    const count = c.req.query('count') || '10'
+    const count = parseInt(c.req.query('count') || '10')
     
-    const result = await DB.prepare(`
+    // 1. 復習期限が来た単語を優先的に取得
+    const dueWords = await DB.prepare(`
       SELECT w.*, 
              COALESCE(p.correct_count, 0) as correct_count,
-             COALESCE(p.incorrect_count, 0) as incorrect_count
+             COALESCE(p.incorrect_count, 0) as incorrect_count,
+             p.next_review_date,
+             p.interval_days,
+             p.review_stage
       FROM words w
-      LEFT JOIN progress p ON w.id = p.word_id AND p.user_id = 'default_user'
-      WHERE w.level_id = ?
-      ORDER BY RANDOM()
+      INNER JOIN progress p ON w.id = p.word_id AND p.user_id = 'default_user'
+      WHERE w.level_id = ? 
+        AND p.next_review_date <= datetime('now')
+        AND p.review_stage < 2
+      ORDER BY p.next_review_date ASC
       LIMIT ?
     `).bind(levelId, count).all()
     
-    return c.json({ success: true, words: result.results })
+    let words = dueWords.results || []
+    
+    // 2. 不足分は新規単語または習得済み単語から取得
+    if (words.length < count) {
+      const remaining = count - words.length
+      const newWords = await DB.prepare(`
+        SELECT w.*, 
+               COALESCE(p.correct_count, 0) as correct_count,
+               COALESCE(p.incorrect_count, 0) as incorrect_count
+        FROM words w
+        LEFT JOIN progress p ON w.id = p.word_id AND p.user_id = 'default_user'
+        WHERE w.level_id = ?
+          AND (p.id IS NULL OR p.review_stage = 2)
+        ORDER BY RANDOM()
+        LIMIT ?
+      `).bind(levelId, remaining).all()
+      
+      words = words.concat(newWords.results || [])
+    }
+    
+    return c.json({ 
+      success: true, 
+      words: words,
+      due_count: dueWords.results?.length || 0
+    })
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500)
   }
 })
 
-// API: 学習進捗を記録
+// API: 今日復習すべき単語数を取得
+app.get('/api/review-due/:levelId', async (c) => {
+  try {
+    const { DB } = c.env
+    const levelId = c.req.param('levelId')
+    
+    const result = await DB.prepare(`
+      SELECT COUNT(*) as due_count
+      FROM words w
+      INNER JOIN progress p ON w.id = p.word_id AND p.user_id = 'default_user'
+      WHERE w.level_id = ? 
+        AND p.next_review_date <= datetime('now')
+        AND p.review_stage < 2
+    `).bind(levelId).first()
+    
+    return c.json({ success: true, due_count: result?.due_count || 0 })
+  } catch (error) {
+    return c.json({ success: false, error: String(error) }, 500)
+  }
+})
+
+// SM-2アルゴリズムに基づいて次回復習日を計算
+function calculateNextReview(easinessFactor: number, repetitions: number, intervalDays: number, quality: number) {
+  // quality: 0-5 (0=完全に忘れた, 5=完璧に覚えている)
+  // 不正解の場合 quality=0-2, 正解の場合 quality=3-5
+  
+  let newEasinessFactor = easinessFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
+  if (newEasinessFactor < 1.3) newEasinessFactor = 1.3
+  
+  let newRepetitions = repetitions
+  let newIntervalDays = intervalDays
+  
+  if (quality < 3) {
+    // 不正解の場合、最初からやり直し
+    newRepetitions = 0
+    newIntervalDays = 0
+  } else {
+    // 正解の場合
+    if (repetitions === 0) {
+      newIntervalDays = 1
+    } else if (repetitions === 1) {
+      newIntervalDays = 6
+    } else {
+      newIntervalDays = Math.round(intervalDays * newEasinessFactor)
+    }
+    newRepetitions += 1
+  }
+  
+  const nextReviewDate = new Date()
+  nextReviewDate.setDate(nextReviewDate.getDate() + newIntervalDays)
+  
+  return {
+    easinessFactor: newEasinessFactor,
+    repetitions: newRepetitions,
+    intervalDays: newIntervalDays,
+    nextReviewDate: nextReviewDate.toISOString()
+  }
+}
+
+// API: 学習進捗を記録（SRS対応）
 app.post('/api/progress', async (c) => {
   try {
     const { DB } = c.env
@@ -125,10 +214,29 @@ app.post('/api/progress', async (c) => {
       WHERE word_id = ? AND user_id = 'default_user' AND mode = ?
     `).bind(word_id, mode).first()
     
+    // quality: 不正解=1, 正解=4（標準的な正解）
+    const quality = is_correct ? 4 : 1
+    
     if (existing) {
       // 連続正解数を計算
       let consecutiveCorrect = is_correct ? (existing.consecutive_correct || 0) + 1 : 0
       let isMastered = existing.is_mastered || (consecutiveCorrect >= 2)
+      
+      // SRSパラメータを計算
+      const srsData = calculateNextReview(
+        existing.easiness_factor || 2.5,
+        existing.repetitions || 0,
+        existing.interval_days || 0,
+        quality
+      )
+      
+      // review_stage: 0=新規、1=学習中、2=習得済み
+      let reviewStage = existing.review_stage || 0
+      if (isMastered) {
+        reviewStage = 2
+      } else if (existing.correct_count > 0 || existing.incorrect_count > 0) {
+        reviewStage = 1
+      }
       
       // 更新
       await DB.prepare(`
@@ -138,7 +246,12 @@ app.post('/api/progress', async (c) => {
             consecutive_correct = ?,
             is_mastered = ?,
             mastered_at = CASE WHEN ? = 1 AND is_mastered = 0 THEN CURRENT_TIMESTAMP ELSE mastered_at END,
-            last_practiced = CURRENT_TIMESTAMP
+            last_practiced = CURRENT_TIMESTAMP,
+            easiness_factor = ?,
+            repetitions = ?,
+            interval_days = ?,
+            next_review_date = ?,
+            review_stage = ?
         WHERE word_id = ? AND user_id = 'default_user' AND mode = ?
       `).bind(
         is_correct ? 1 : 0, 
@@ -146,22 +259,57 @@ app.post('/api/progress', async (c) => {
         consecutiveCorrect,
         isMastered ? 1 : 0,
         isMastered ? 1 : 0,
+        srsData.easinessFactor,
+        srsData.repetitions,
+        srsData.intervalDays,
+        srsData.nextReviewDate,
+        reviewStage,
         word_id, 
         mode
       ).run()
       
-      return c.json({ success: true, is_mastered: isMastered, consecutive_correct: consecutiveCorrect })
+      return c.json({ 
+        success: true, 
+        is_mastered: isMastered, 
+        consecutive_correct: consecutiveCorrect,
+        next_review_date: srsData.nextReviewDate,
+        interval_days: srsData.intervalDays
+      })
     } else {
       // 新規作成
-      let isMastered = is_correct ? false : false
+      let isMastered = false
       let consecutiveCorrect = is_correct ? 1 : 0
       
-      await DB.prepare(`
-        INSERT INTO progress (word_id, user_id, correct_count, incorrect_count, consecutive_correct, is_mastered, mode)
-        VALUES (?, 'default_user', ?, ?, ?, ?, ?)
-      `).bind(word_id, is_correct ? 1 : 0, is_correct ? 0 : 1, consecutiveCorrect, isMastered ? 1 : 0, mode).run()
+      const srsData = calculateNextReview(2.5, 0, 0, quality)
       
-      return c.json({ success: true, is_mastered: isMastered, consecutive_correct: consecutiveCorrect })
+      await DB.prepare(`
+        INSERT INTO progress (
+          word_id, user_id, correct_count, incorrect_count, consecutive_correct, 
+          is_mastered, mode, easiness_factor, repetitions, interval_days, 
+          next_review_date, review_stage
+        )
+        VALUES (?, 'default_user', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        word_id, 
+        is_correct ? 1 : 0, 
+        is_correct ? 0 : 1, 
+        consecutiveCorrect, 
+        isMastered ? 1 : 0, 
+        mode,
+        srsData.easinessFactor,
+        srsData.repetitions,
+        srsData.intervalDays,
+        srsData.nextReviewDate,
+        0 // 新規
+      ).run()
+      
+      return c.json({ 
+        success: true, 
+        is_mastered: isMastered, 
+        consecutive_correct: consecutiveCorrect,
+        next_review_date: srsData.nextReviewDate,
+        interval_days: srsData.intervalDays
+      })
     }
   } catch (error) {
     return c.json({ success: false, error: String(error) }, 500)
