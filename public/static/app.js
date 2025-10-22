@@ -103,7 +103,7 @@ async function displayLevels(levels) {
             
             if (dueCount > 0) {
                 reviewInfo = `
-                    <div class="text-sm text-orange-600 font-bold mb-1">
+                    <div class="text-sm text-orange-600 font-bold mb-1" style="display: none;">
                         <i class="fas fa-clock mr-1"></i>復習予定: ${dueCount}語
                     </div>
                 `;
