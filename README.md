@@ -14,8 +14,8 @@
 
 ## 📍 公開URL
 
-- **本番環境**: https://622c2e64.webapp-7wz.pages.dev
-- **管理画面**: https://622c2e64.webapp-7wz.pages.dev/admin
+- **本番環境**: https://cd741bdf.webapp-7wz.pages.dev
+- **管理画面**: https://cd741bdf.webapp-7wz.pages.dev/admin
   - ユーザー名: `hawai1214`
   - パスワード: `waikiki1101`
 - **GitHub**: https://github.com/Hitomi556/newtyping
