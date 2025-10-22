@@ -14,8 +14,8 @@
 
 ## 📍 公開URL
 
-- **本番環境**: https://f8d5e141.webapp-7wz.pages.dev
-- **管理画面**: https://f8d5e141.webapp-7wz.pages.dev/admin
+- **本番環境**: https://622c2e64.webapp-7wz.pages.dev
+- **管理画面**: https://622c2e64.webapp-7wz.pages.dev/admin
   - ユーザー名: `hawai1214`
   - パスワード: `waikiki1101`
 - **GitHub**: https://github.com/Hitomi556/newtyping
@@ -31,6 +31,11 @@
 - ✅ 今日の正解数・単語習得数・連続学習日数の統計表示
 - ✅ ゴーストテキスト表示（入力補助）
 - ✅ スキップ機能
+- ✅ **忘却曲線ベースのスペースドリピティション（SRS）**
+  - ✨ SM-2アルゴリズムによる最適な復習スケジューリング
+  - ✨ 学習開始済み級のみ復習予定を表示（localStorage管理）
+  - ✨ 復習期限が来た単語を優先的に出題
+  - ✨ 復習間隔: 1日 → 6日 → 指数的に増加
 
 ### 管理機能
 - ✅ 単語一覧表示（ページネーション付き）
@@ -67,6 +72,7 @@
 
 ### progress（学習進捗テーブル）
 - id, word_id, user_id, correct_count, incorrect_count, consecutive_correct, is_mastered, mastered_at, last_practiced, mode, created_at
+- **SRSフィールド**: easiness_factor, repetitions, interval_days, next_review_date, review_stage
 
 ## 🚀 開発環境のセットアップ
 
@@ -116,12 +122,13 @@ curl http://localhost:3000
 ### ユーザーAPI
 - `GET /api/levels` - 級一覧の取得
 - `GET /api/words/:levelId` - 特定の級の単語一覧
-- `GET /api/quiz/:levelId` - ランダムに単語を取得（クイズ用）
-- `POST /api/progress` - 学習進捗の記録
+- `GET /api/quiz/:levelId` - ランダムに単語を取得（復習期限優先）
+- `POST /api/progress` - 学習進捗の記録（SRSパラメータ自動計算）
 - `GET /api/stats/:levelId` - 統計情報の取得
 - `GET /api/mastery/global` - グローバル習得統計
 - `GET /api/mastery/level/:levelId` - 級ごとの習得チェック
 - `POST /api/reset-level-progress` - 級の進捗をリセット
+- `GET /api/review-due/:levelId` - 復習予定数の取得（SRS）
 
 ### 管理API（Basic認証必要）
 - `GET /api/admin/words` - 全単語の取得
@@ -179,7 +186,7 @@ curl http://localhost:3000
 
 ---
 
-**最終更新日**: 2025-10-19
+**最終更新日**: 2025-10-22
 **ステータス**: ✅ 本番稼働中
 **デプロイ環境**: Cloudflare Pages（グローバル配信）
-**最新の改善**: CSV一括インポート機能の大幅強化（引用符、カンマ、エスケープ対応）
+**最新の改善**: 学習開始済み級のみ復習予定を表示（localStorage管理）
