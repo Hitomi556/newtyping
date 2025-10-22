@@ -16,7 +16,8 @@ const STORAGE_KEYS = {
     TODAY_CORRECT: 'today_correct_count',
     TODAY_DATE: 'today_date',
     TOTAL_CORRECT: 'total_correct_count',
-    STREAK: 'streak_data'
+    STREAK: 'streak_data',
+    STARTED_LEVELS: 'started_levels' // 学習開始済み級のリスト
 };
 
 // 初期化
@@ -69,6 +70,9 @@ async function displayLevels(levels) {
     const levelsList = document.getElementById('levels-list');
     levelsList.innerHTML = '';
     
+    // 学習開始済み級のリストを取得
+    const startedLevels = getStartedLevels();
+    
     for (const level of levels) {
         const card = document.createElement('div');
         card.className = 'level-card';
@@ -84,15 +88,26 @@ async function displayLevels(levels) {
             '-1': 'bg-pink-500'
         };
         
-        // 復習予定数を取得
-        let dueCount = 0;
-        try {
-            const response = await axios.get(`/api/review-due/${level.id}`);
-            if (response.data.success) {
-                dueCount = response.data.due_count;
+        // 学習開始済みの級のみ復習予定数を取得して表示
+        let reviewInfo = '';
+        if (startedLevels.includes(level.id)) {
+            let dueCount = 0;
+            try {
+                const response = await axios.get(`/api/review-due/${level.id}`);
+                if (response.data.success) {
+                    dueCount = response.data.due_count;
+                }
+            } catch (error) {
+                console.error('復習予定数の取得エラー:', error);
             }
-        } catch (error) {
-            console.error('復習予定数の取得エラー:', error);
+            
+            if (dueCount > 0) {
+                reviewInfo = `
+                    <div class="text-sm text-orange-600 font-bold mb-1">
+                        <i class="fas fa-clock mr-1"></i>復習予定: ${dueCount}語
+                    </div>
+                `;
+            }
         }
         
         card.innerHTML = `
@@ -102,11 +117,7 @@ async function displayLevels(levels) {
             <div class="text-2xl font-bold text-gray-800 mb-2">
                 ${level.word_count || 0}語
             </div>
-            ${dueCount > 0 ? `
-                <div class="text-sm text-orange-600 font-bold mb-1">
-                    <i class="fas fa-clock mr-1"></i>復習予定: ${dueCount}語
-                </div>
-            ` : ''}
+            ${reviewInfo}
             <div class="text-sm text-gray-600">
                 クリックして開始
             </div>
@@ -121,6 +132,9 @@ async function startLevel(level) {
     currentLevel = level;
     isReviewMode = false;
     wrongWords = [];
+    
+    // 学習開始済み級リストに追加
+    markLevelAsStarted(level.id);
     
     try {
         const response = await axios.get(`/api/quiz/${level.id}?count=10`);
@@ -451,6 +465,27 @@ async function saveProgress(wordId, isCorrect) {
 }
 
 // ========== 統計機能 ==========
+
+// 学習開始済み級のリストを取得
+function getStartedLevels() {
+    const stored = localStorage.getItem(STORAGE_KEYS.STARTED_LEVELS);
+    if (!stored) return [];
+    try {
+        return JSON.parse(stored);
+    } catch (error) {
+        console.error('学習開始済み級リストの読み込みエラー:', error);
+        return [];
+    }
+}
+
+// 級を学習開始済みとしてマーク
+function markLevelAsStarted(levelId) {
+    const startedLevels = getStartedLevels();
+    if (!startedLevels.includes(levelId)) {
+        startedLevels.push(levelId);
+        localStorage.setItem(STORAGE_KEYS.STARTED_LEVELS, JSON.stringify(startedLevels));
+    }
+}
 
 // 今日の正解数を更新
 function updateTodayCorrectCount() {
