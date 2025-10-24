@@ -1464,18 +1464,19 @@ app.get('/', (c) => {
                     <!-- 間違えた単語の復習メッセージ -->
                     <div id="wrong-words-info" class="mb-6 text-orange-600 font-semibold hidden"></div>
                     
-                    <div class="flex flex-col gap-4 items-center">
-                        <button id="continue-review-button" class="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-lg transition hidden">
-                            <i class="fas fa-arrow-right mr-2"></i>間違えた単語を復習する
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                        <button id="retry-button" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-4 rounded-lg transition">
+                            <i class="fas fa-redo mr-2"></i>もう一度
                         </button>
-                        <div class="flex gap-4">
-                            <button id="retry-button" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg transition">
-                                <i class="fas fa-redo mr-2"></i>もう一度
-                            </button>
-                            <button id="back-to-menu-button" class="bg-gray-500 hover:bg-gray-600 text-white px-8 py-3 rounded-lg transition">
-                                <i class="fas fa-home mr-2"></i>メニューに戻る
-                            </button>
-                        </div>
+                        <button id="continue-next-button" class="bg-green-600 hover:bg-green-700 text-white px-6 py-4 rounded-lg transition">
+                            <i class="fas fa-arrow-right mr-2"></i>次に進む
+                        </button>
+                        <button id="switch-challenge-button" class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-4 rounded-lg transition">
+                            <i class="fas fa-fire mr-2"></i>挑戦モードで行う
+                        </button>
+                        <button id="back-to-menu-button" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-4 rounded-lg transition">
+                            <i class="fas fa-home mr-2"></i>ホームに戻る
+                        </button>
                     </div>
                 </div>
             </div>

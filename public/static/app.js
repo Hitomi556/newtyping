@@ -12,6 +12,7 @@ let currentMode = 'text'; // 'text' または 'audio'
 let mistakeMade = false; // 途中でミスがあったかどうかを記録
 let currentDifficultyMode = 'challenge'; // 'challenge' または 'practice'
 let practiceBlankIndex = -1; // 練習モードで空欄にした文字のインデックス
+let lastQuizWords = []; // 最後に解いた問題セットを保存（挑戦モードに切り替えるため）
 
 // ローカルストレージキー
 const STORAGE_KEYS = {
@@ -47,8 +48,9 @@ function setupEventListeners() {
     
     // 結果画面のボタン
     document.getElementById('retry-button')?.addEventListener('click', retryLevel);
+    document.getElementById('continue-next-button')?.addEventListener('click', continueNext);
+    document.getElementById('switch-challenge-button')?.addEventListener('click', switchToChallenge);
     document.getElementById('back-to-menu-button')?.addEventListener('click', backToLevelSelection);
-    document.getElementById('continue-review-button')?.addEventListener('click', startReview);
     
     // モード切替ボタン
     document.getElementById('text-mode-btn')?.addEventListener('click', () => switchMode('text'));
@@ -147,15 +149,15 @@ async function startLevel(level) {
 }
 
 // 難易度を選択して単語を読み込み
-async function selectDifficulty(difficulty) {
+async function selectDifficulty(difficulty, useLastWords = false) {
     currentDifficultyMode = difficulty;
     isReviewMode = false;
     wrongWords = [];
     
     try {
-        const response = await axios.get(`/api/quiz/${currentLevel.id}?count=10`);
-        if (response.data.success && response.data.words.length > 0) {
-            currentWords = response.data.words;
+        // 挑戦モード切り替えの場合は前回の単語を使用
+        if (useLastWords && lastQuizWords.length > 0) {
+            currentWords = lastQuizWords;
             currentWordIndex = 0;
             correctCount = 0;
             incorrectCount = 0;
@@ -163,7 +165,20 @@ async function selectDifficulty(difficulty) {
             showPracticeScreen();
             displayQuestion();
         } else {
-            alert('この級にはまだ単語が登録されていません');
+            // 新しい問題セットを取得
+            const response = await axios.get(`/api/quiz/${currentLevel.id}?count=10`);
+            if (response.data.success && response.data.words.length > 0) {
+                currentWords = response.data.words;
+                lastQuizWords = [...response.data.words]; // 単語セットを保存
+                currentWordIndex = 0;
+                correctCount = 0;
+                incorrectCount = 0;
+                
+                showPracticeScreen();
+                displayQuestion();
+            } else {
+                alert('この級にはまだ単語が登録されていません');
+            }
         }
     } catch (error) {
         console.error('単語の読み込みエラー:', error);
@@ -396,17 +411,23 @@ function showResults() {
     const accuracy = total > 0 ? Math.round((correctCount / total) * 100) : 0;
     document.getElementById('result-accuracy').textContent = accuracy + '%';
     
-    // 間違えた単語がある場合
-    const wrongWordsInfo = document.getElementById('wrong-words-info');
-    const continueReviewButton = document.getElementById('continue-review-button');
+    // 挑戦モード切り替えボタンの表示制御
+    const switchChallengeButton = document.getElementById('switch-challenge-button');
+    if (currentDifficultyMode === 'practice') {
+        // 練習モードの場合のみ表示
+        switchChallengeButton.style.display = 'block';
+    } else {
+        // 挑戦モードの場合は非表示
+        switchChallengeButton.style.display = 'none';
+    }
     
-    if (wrongWords.length > 0 && !isReviewMode) {
+    // 間違えた単語がある場合のメッセージ
+    const wrongWordsInfo = document.getElementById('wrong-words-info');
+    if (wrongWords.length > 0) {
         wrongWordsInfo.textContent = `${wrongWords.length}個の単語を間違えました`;
         wrongWordsInfo.classList.remove('hidden');
-        continueReviewButton.classList.remove('hidden');
     } else {
         wrongWordsInfo.classList.add('hidden');
-        continueReviewButton.classList.add('hidden');
     }
 }
 
@@ -425,10 +446,27 @@ function startReview() {
     displayQuestion();
 }
 
-// もう一度
+// もう一度（同じ難易度で再挑戦）
 function retryLevel() {
     if (currentLevel) {
-        startLevel(currentLevel);
+        // 同じ難易度モードで難易度選択画面に戻る
+        selectDifficulty(currentDifficultyMode);
+    }
+}
+
+// 次に進む（新しい問題セット）
+async function continueNext() {
+    if (currentLevel) {
+        // 新しい問題セットを取得
+        selectDifficulty(currentDifficultyMode, false);
+    }
+}
+
+// 挑戦モードで同じ問題を行う
+function switchToChallenge() {
+    if (currentLevel && lastQuizWords.length > 0) {
+        // 同じ問題セットを挑戦モードで実行
+        selectDifficulty('challenge', true);
     }
 }
 
