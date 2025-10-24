@@ -354,6 +354,11 @@ async function checkAnswer() {
         feedback.className = 'text-center mt-4 text-lg font-semibold h-8 feedback-incorrect';
     }
     
+    // 挑戦モードの場合、フィードバック時に音声を自動再生
+    if (currentDifficultyMode === 'challenge') {
+        speakWord(word.english);
+    }
+    
     // 進捗を保存
     await saveProgress(word.id, isCorrect);
     
@@ -373,6 +378,11 @@ function skipQuestion() {
     const feedback = document.getElementById('feedback');
     feedback.textContent = `スキップ... 正解: ${word.english}`;
     feedback.className = 'text-center mt-4 text-lg font-semibold h-8 feedback-incorrect';
+    
+    // 挑戦モードの場合、スキップ時にも音声を自動再生
+    if (currentDifficultyMode === 'challenge') {
+        speakWord(word.english);
+    }
     
     // 進捗を保存（不正解として）
     saveProgress(word.id, false);
