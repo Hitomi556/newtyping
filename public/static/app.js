@@ -10,6 +10,7 @@ let wrongWords = [];
 let isReviewMode = false;
 let currentMode = 'text'; // 'text' または 'audio'
 let mistakeMade = false; // 途中でミスがあったかどうかを記録
+let currentDifficultyMode = 'challenge'; // 'challenge' または 'practice'
 
 // ローカルストレージキー
 const STORAGE_KEYS = {
@@ -31,6 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function setupEventListeners() {
     // 戻るボタン
     document.getElementById('back-button')?.addEventListener('click', backToLevelSelection);
+    document.getElementById('back-to-levels')?.addEventListener('click', backToLevelSelection);
     
     // スキップボタン
     document.getElementById('skip-button')?.addEventListener('click', skipQuestion);
@@ -50,6 +52,10 @@ function setupEventListeners() {
     // モード切替ボタン
     document.getElementById('text-mode-btn')?.addEventListener('click', () => switchMode('text'));
     document.getElementById('audio-mode-btn')?.addEventListener('click', () => switchMode('audio'));
+    
+    // 難易度選択ボタン
+    document.getElementById('challenge-mode-card')?.addEventListener('click', () => selectDifficulty('challenge'));
+    document.getElementById('practice-mode-card')?.addEventListener('click', () => selectDifficulty('practice'));
 }
 
 // 級一覧を読み込み
@@ -127,17 +133,26 @@ async function displayLevels(levels) {
     }
 }
 
-// 級を開始
+// 級を開始（難易度選択画面を表示）
 async function startLevel(level) {
     currentLevel = level;
-    isReviewMode = false;
-    wrongWords = [];
     
     // 学習開始済み級リストに追加
     markLevelAsStarted(level.id);
     
+    // 難易度選択画面を表示
+    document.getElementById('level-selection').classList.add('hidden');
+    document.getElementById('difficulty-selection').classList.remove('hidden');
+}
+
+// 難易度を選択して単語を読み込み
+async function selectDifficulty(difficulty) {
+    currentDifficultyMode = difficulty;
+    isReviewMode = false;
+    wrongWords = [];
+    
     try {
-        const response = await axios.get(`/api/quiz/${level.id}?count=10`);
+        const response = await axios.get(`/api/quiz/${currentLevel.id}?count=10`);
         if (response.data.success && response.data.words.length > 0) {
             currentWords = response.data.words;
             currentWordIndex = 0;
@@ -158,10 +173,24 @@ async function startLevel(level) {
 // 練習画面を表示
 function showPracticeScreen() {
     document.getElementById('level-selection').classList.add('hidden');
+    document.getElementById('difficulty-selection').classList.add('hidden');
     document.getElementById('practice-screen').classList.remove('hidden');
     document.getElementById('result-screen').classList.add('hidden');
     
-    document.getElementById('current-level').textContent = currentLevel.display_name;
+    const modeLabel = currentDifficultyMode === 'challenge' ? '挑戦モード' : '練習モード';
+    document.getElementById('current-level').textContent = `${currentLevel.display_name} - ${modeLabel}`;
+    
+    // 練習モードの場合はテキスト/音声モード切替ボタンを非表示
+    const textModeBtn = document.getElementById('text-mode-btn');
+    const audioModeBtn = document.getElementById('audio-mode-btn');
+    if (currentDifficultyMode === 'practice') {
+        textModeBtn.style.display = 'none';
+        audioModeBtn.style.display = 'none';
+    } else {
+        textModeBtn.style.display = 'block';
+        audioModeBtn.style.display = 'block';
+    }
+    
     updateProgress();
 }
 
@@ -188,15 +217,42 @@ function displayQuestion() {
     ghostText.textContent = word.english;
     mistakeMade = false; // 新しい単語なのでミスフラグをリセット
     
-    // 単語のヒント表示を生成（最初の1文字を薄く、残りはアンダースコア）
-    const firstChar = word.english.charAt(0);
-    const underscores = '_'.repeat(word.english.length - 1);
-    wordHint.innerHTML = `<span style="color: rgba(100, 100, 100, 0.3); letter-spacing: 2px;">${firstChar}</span><span style="letter-spacing: 2px;">${underscores}</span>`;
+    // 難易度モードに応じてヒント表示を変更
+    if (currentDifficultyMode === 'challenge') {
+        // 挑戦モード：頭文字 + アンダースコア
+        const firstChar = word.english.charAt(0);
+        const underscores = '_'.repeat(word.english.length - 1);
+        wordHint.innerHTML = `<span style="color: rgba(100, 100, 100, 0.3); letter-spacing: 2px;">${firstChar}</span><span style="letter-spacing: 2px;">${underscores}</span>`;
+    } else {
+        // 練習モード：1文字だけランダムに空欄
+        const randomIndex = Math.floor(Math.random() * word.english.length);
+        let hintHTML = '';
+        for (let i = 0; i < word.english.length; i++) {
+            if (i === randomIndex) {
+                hintHTML += `<span style="letter-spacing: 2px;">_</span>`;
+            } else {
+                hintHTML += `<span style="color: rgba(100, 100, 100, 0.5); letter-spacing: 2px;">${word.english.charAt(i)}</span>`;
+            }
+        }
+        wordHint.innerHTML = hintHTML;
+    }
     
-    // モードに応じて表示を変更
-    if (currentMode === 'text') {
+    // 難易度モードと表示モードに応じて表示を変更
+    if (currentDifficultyMode === 'practice') {
+        // 練習モード：常に日本語訳と音声ボタンを表示
+        questionArea.innerHTML = `
+            <div class="text-4xl font-bold mb-4">${word.japanese}</div>
+            <button onclick="speakWord('${word.english}')" class="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg text-lg transition">
+                <i class="fas fa-volume-up mr-2"></i>🔊 音声を聞く
+            </button>
+        `;
+        // 自動的に音声を再生
+        setTimeout(() => speakWord(word.english), 300);
+    } else if (currentMode === 'text') {
+        // 挑戦モード - テキストモード：日本語のみ
         questionArea.innerHTML = `<div class="text-4xl font-bold">${word.japanese}</div>`;
     } else {
+        // 挑戦モード - 音声モード：音声ボタンのみ
         questionArea.innerHTML = `
             <button onclick="speakWord('${word.english}')" class="bg-purple-500 hover:bg-purple-600 text-white px-8 py-4 rounded-lg text-2xl transition">
                 <i class="fas fa-volume-up mr-3"></i>英語を聞く
@@ -378,6 +434,7 @@ function retryLevel() {
 function backToLevelSelection() {
     document.getElementById('practice-screen').classList.add('hidden');
     document.getElementById('result-screen').classList.add('hidden');
+    document.getElementById('difficulty-selection').classList.add('hidden');
     document.getElementById('level-selection').classList.remove('hidden');
     
     currentLevel = null;
@@ -391,6 +448,11 @@ function backToLevelSelection() {
 
 // モード切替
 function switchMode(mode) {
+    // 練習モードの場合はモード切替を無効化
+    if (currentDifficultyMode === 'practice') {
+        return;
+    }
+    
     currentMode = mode;
     
     const textBtn = document.getElementById('text-mode-btn');
@@ -419,6 +481,12 @@ function updateWordHint(input, correctAnswer) {
     const wordHint = document.getElementById('word-hint');
     if (!wordHint) return;
     
+    // 練習モードの場合は動的更新しない（1文字空欄を維持）
+    if (currentDifficultyMode === 'practice') {
+        return;
+    }
+    
+    // 挑戦モード：入力に応じて動的更新
     let hintHTML = '';
     
     for (let i = 0; i < correctAnswer.length; i++) {

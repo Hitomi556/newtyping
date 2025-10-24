@@ -1315,6 +1315,54 @@ app.get('/', (c) => {
                 </div>
             </div>
 
+            <!-- 難易度選択画面 -->
+            <div id="difficulty-selection" class="max-w-3xl mx-auto hidden">
+                <button id="back-to-levels" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg mb-6 transition">
+                    <i class="fas fa-arrow-left mr-2"></i>級選択に戻る
+                </button>
+                <h3 class="text-2xl font-bold text-white mb-6 text-center">
+                    <i class="fas fa-gamepad mr-2"></i>
+                    モードを選択してください
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 挑戦モード -->
+                    <div id="challenge-mode-card" class="bg-white rounded-xl shadow-lg p-8 cursor-pointer hover:shadow-2xl transition transform hover:-translate-y-1">
+                        <div class="text-center">
+                            <div class="bg-red-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-fire text-4xl text-red-600"></i>
+                            </div>
+                            <h4 class="text-2xl font-bold text-gray-800 mb-3">挑戦モード</h4>
+                            <p class="text-gray-600 mb-4">頭文字のヒントのみ！<br>本気で覚えたい人向け</p>
+                            <div class="bg-gray-100 rounded-lg p-4 text-left">
+                                <div class="text-sm text-gray-700 space-y-2">
+                                    <div><i class="fas fa-check text-green-600 mr-2"></i>頭文字 + アンダースコア</div>
+                                    <div><i class="fas fa-check text-green-600 mr-2"></i>日本語訳なし</div>
+                                    <div><i class="fas fa-check text-green-600 mr-2"></i>集中力が必要</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 練習モード -->
+                    <div id="practice-mode-card" class="bg-white rounded-xl shadow-lg p-8 cursor-pointer hover:shadow-2xl transition transform hover:-translate-y-1">
+                        <div class="text-center">
+                            <div class="bg-blue-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-graduation-cap text-4xl text-blue-600"></i>
+                            </div>
+                            <h4 class="text-2xl font-bold text-gray-800 mb-3">練習モード</h4>
+                            <p class="text-gray-600 mb-4">音声と日本語でサポート！<br>楽しく学びたい人向け</p>
+                            <div class="bg-gray-100 rounded-lg p-4 text-left">
+                                <div class="text-sm text-gray-700 space-y-2">
+                                    <div><i class="fas fa-check text-green-600 mr-2"></i>1文字だけ空欄</div>
+                                    <div><i class="fas fa-check text-green-600 mr-2"></i>日本語訳を表示</div>
+                                    <div><i class="fas fa-check text-green-600 mr-2"></i>自動音声再生</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- タイピング練習画面 -->
             <div id="practice-screen" class="max-w-4xl mx-auto hidden">
                 <div class="practice-card p-6 mb-6">
