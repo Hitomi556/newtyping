@@ -17,7 +17,7 @@
 - **本番環境**: https://newtyping.pages.dev （固定URL）
 - **管理画面**: https://newtyping.pages.dev/admin
   - ユーザー名: `hawai1214`
-  - パスワード: `waikiki1101`
+  - パスワード: `canada2023`
 - **GitHub**: https://github.com/Hitomi556/newtyping
 
 ## 🎯 完成した機能
