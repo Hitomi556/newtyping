@@ -96,7 +96,7 @@ app.get('/api/quiz/:levelId', async (c) => {
     const levelId = c.req.param('levelId')
     const count = parseInt(c.req.query('count') || '10')
     
-    // 1. 復習期限が来た単語を優先的に取得
+    // 1. 復習期限が来た単語を取得（全て取得してシャッフル）
     const dueWords = await DB.prepare(`
       SELECT w.*, 
              COALESCE(p.correct_count, 0) as correct_count,
@@ -109,17 +109,17 @@ app.get('/api/quiz/:levelId', async (c) => {
       WHERE w.level_id = ? 
         AND p.next_review_date <= datetime('now')
         AND p.review_stage < 2
-      ORDER BY p.next_review_date ASC
-      LIMIT ?
-    `).bind(levelId, count).all()
+    `).bind(levelId).all()
     
-    let words = dueWords.results || []
+    // JavaScriptでシャッフルしてcount個取得
+    const shuffledDue = (dueWords.results || []).sort(() => Math.random() - 0.5)
+    let words = shuffledDue.slice(0, count)
     
-    // 2. 不足分は全ての単語からランダムに取得（新規単語優先）
+    // 2. 不足分は全ての単語から取得してJavaScriptでシャッフル（新規単語優先）
     if (words.length < count) {
       const remaining = count - words.length
       
-      // まず新規単語（progressが存在しない）を取得
+      // まず新規単語（progressが存在しない）を全て取得
       const newWords = await DB.prepare(`
         SELECT w.*, 
                0 as correct_count,
@@ -128,11 +128,11 @@ app.get('/api/quiz/:levelId', async (c) => {
         LEFT JOIN progress p ON w.id = p.word_id AND p.user_id = 'default_user'
         WHERE w.level_id = ?
           AND p.id IS NULL
-        ORDER BY RANDOM()
-        LIMIT ?
-      `).bind(levelId, remaining).all()
+      `).bind(levelId).all()
       
-      words = words.concat(newWords.results || [])
+      // JavaScriptでシャッフル（Fisher-Yates）
+      const shuffled = (newWords.results || []).sort(() => Math.random() - 0.5)
+      words = words.concat(shuffled.slice(0, remaining))
       
       // まだ不足している場合は、学習済み単語からも取得
       if (words.length < count) {
@@ -145,11 +145,11 @@ app.get('/api/quiz/:levelId', async (c) => {
           INNER JOIN progress p ON w.id = p.word_id AND p.user_id = 'default_user'
           WHERE w.level_id = ?
             AND p.next_review_date > datetime('now')
-          ORDER BY RANDOM()
-          LIMIT ?
-        `).bind(levelId, stillRemaining).all()
+        `).bind(levelId).all()
         
-        words = words.concat(learnedWords.results || [])
+        // JavaScriptでシャッフル
+        const shuffledLearned = (learnedWords.results || []).sort(() => Math.random() - 0.5)
+        words = words.concat(shuffledLearned.slice(0, stillRemaining))
       }
     }
     
