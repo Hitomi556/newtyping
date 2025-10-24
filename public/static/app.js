@@ -11,6 +11,7 @@ let isReviewMode = false;
 let currentMode = 'text'; // 'text' または 'audio'
 let mistakeMade = false; // 途中でミスがあったかどうかを記録
 let currentDifficultyMode = 'challenge'; // 'challenge' または 'practice'
+let practiceBlankIndex = -1; // 練習モードで空欄にした文字のインデックス
 
 // ローカルストレージキー
 const STORAGE_KEYS = {
@@ -223,12 +224,13 @@ function displayQuestion() {
         const firstChar = word.english.charAt(0);
         const underscores = '_'.repeat(word.english.length - 1);
         wordHint.innerHTML = `<span style="color: rgba(100, 100, 100, 0.3); letter-spacing: 2px;">${firstChar}</span><span style="letter-spacing: 2px;">${underscores}</span>`;
+        practiceBlankIndex = -1; // リセット
     } else {
         // 練習モード：1文字だけランダムに空欄
-        const randomIndex = Math.floor(Math.random() * word.english.length);
+        practiceBlankIndex = Math.floor(Math.random() * word.english.length);
         let hintHTML = '';
         for (let i = 0; i < word.english.length; i++) {
-            if (i === randomIndex) {
+            if (i === practiceBlankIndex) {
                 hintHTML += `<span style="letter-spacing: 2px;">_</span>`;
             } else {
                 hintHTML += `<span style="color: rgba(100, 100, 100, 0.5); letter-spacing: 2px;">${word.english.charAt(i)}</span>`;
@@ -481,26 +483,45 @@ function updateWordHint(input, correctAnswer) {
     const wordHint = document.getElementById('word-hint');
     if (!wordHint) return;
     
-    // 練習モードの場合は動的更新しない（1文字空欄を維持）
-    if (currentDifficultyMode === 'practice') {
-        return;
-    }
-    
-    // 挑戦モード：入力に応じて動的更新
     let hintHTML = '';
     
-    for (let i = 0; i < correctAnswer.length; i++) {
-        if (i < input.length) {
-            // 入力済みの部分は通常色で表示
-            const isCorrect = input[i] === correctAnswer[i];
-            const color = isCorrect ? 'rgba(0, 200, 0, 0.8)' : 'rgba(255, 0, 0, 0.8)';
-            hintHTML += `<span style="color: ${color}; letter-spacing: 2px;">${correctAnswer[i]}</span>`;
-        } else if (i === 0) {
-            // 最初の文字（未入力の場合）は薄いグレーで表示
-            hintHTML += `<span style="color: rgba(100, 100, 100, 0.3); letter-spacing: 2px;">${correctAnswer[i]}</span>`;
-        } else {
-            // 残りはアンダースコア
-            hintHTML += `<span style="letter-spacing: 2px;">_</span>`;
+    if (currentDifficultyMode === 'practice') {
+        // 練習モード：1文字空欄を維持しつつ、入力ミスは赤文字で表示
+        for (let i = 0; i < correctAnswer.length; i++) {
+            if (i === practiceBlankIndex) {
+                // 空欄位置：入力があれば色付き、なければアンダースコア
+                if (i < input.length) {
+                    const isCorrect = input[i] === correctAnswer[i];
+                    const color = isCorrect ? 'rgba(0, 200, 0, 0.8)' : 'rgba(255, 0, 0, 0.8)';
+                    hintHTML += `<span style="color: ${color}; letter-spacing: 2px;">${correctAnswer[i]}</span>`;
+                } else {
+                    hintHTML += `<span style="letter-spacing: 2px;">_</span>`;
+                }
+            } else if (i < input.length) {
+                // 空欄以外の位置で入力がある場合：正誤を色で表示
+                const isCorrect = input[i] === correctAnswer[i];
+                const color = isCorrect ? 'rgba(100, 100, 100, 0.5)' : 'rgba(255, 0, 0, 0.8)';
+                hintHTML += `<span style="color: ${color}; letter-spacing: 2px;">${correctAnswer[i]}</span>`;
+            } else {
+                // 未入力部分：元の薄いグレー
+                hintHTML += `<span style="color: rgba(100, 100, 100, 0.5); letter-spacing: 2px;">${correctAnswer[i]}</span>`;
+            }
+        }
+    } else {
+        // 挑戦モード：入力に応じて動的更新
+        for (let i = 0; i < correctAnswer.length; i++) {
+            if (i < input.length) {
+                // 入力済みの部分は通常色で表示
+                const isCorrect = input[i] === correctAnswer[i];
+                const color = isCorrect ? 'rgba(0, 200, 0, 0.8)' : 'rgba(255, 0, 0, 0.8)';
+                hintHTML += `<span style="color: ${color}; letter-spacing: 2px;">${correctAnswer[i]}</span>`;
+            } else if (i === 0) {
+                // 最初の文字（未入力の場合）は薄いグレーで表示
+                hintHTML += `<span style="color: rgba(100, 100, 100, 0.3); letter-spacing: 2px;">${correctAnswer[i]}</span>`;
+            } else {
+                // 残りはアンダースコア
+                hintHTML += `<span style="letter-spacing: 2px;">_</span>`;
+            }
         }
     }
     
