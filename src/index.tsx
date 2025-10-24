@@ -115,22 +115,42 @@ app.get('/api/quiz/:levelId', async (c) => {
     
     let words = dueWords.results || []
     
-    // 2. 不足分は新規単語または習得済み単語から取得
+    // 2. 不足分は全ての単語からランダムに取得（新規単語優先）
     if (words.length < count) {
       const remaining = count - words.length
+      
+      // まず新規単語（progressが存在しない）を取得
       const newWords = await DB.prepare(`
         SELECT w.*, 
-               COALESCE(p.correct_count, 0) as correct_count,
-               COALESCE(p.incorrect_count, 0) as incorrect_count
+               0 as correct_count,
+               0 as incorrect_count
         FROM words w
         LEFT JOIN progress p ON w.id = p.word_id AND p.user_id = 'default_user'
         WHERE w.level_id = ?
-          AND (p.id IS NULL OR p.review_stage = 2)
+          AND p.id IS NULL
         ORDER BY RANDOM()
         LIMIT ?
       `).bind(levelId, remaining).all()
       
       words = words.concat(newWords.results || [])
+      
+      // まだ不足している場合は、学習済み単語からも取得
+      if (words.length < count) {
+        const stillRemaining = count - words.length
+        const learnedWords = await DB.prepare(`
+          SELECT w.*, 
+                 COALESCE(p.correct_count, 0) as correct_count,
+                 COALESCE(p.incorrect_count, 0) as incorrect_count
+          FROM words w
+          INNER JOIN progress p ON w.id = p.word_id AND p.user_id = 'default_user'
+          WHERE w.level_id = ?
+            AND p.next_review_date > datetime('now')
+          ORDER BY RANDOM()
+          LIMIT ?
+        `).bind(levelId, stillRemaining).all()
+        
+        words = words.concat(learnedWords.results || [])
+      }
     }
     
     return c.json({ 
