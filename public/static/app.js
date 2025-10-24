@@ -446,11 +446,11 @@ function startReview() {
     displayQuestion();
 }
 
-// もう一度（同じ難易度で再挑戦）
+// もう一度（同じ問題セットを再挑戦）
 function retryLevel() {
-    if (currentLevel) {
-        // 同じ難易度モードで難易度選択画面に戻る
-        selectDifficulty(currentDifficultyMode);
+    if (currentLevel && lastQuizWords.length > 0) {
+        // 同じ問題セットを同じ難易度モードで再実行
+        selectDifficulty(currentDifficultyMode, true);
     }
 }
 
